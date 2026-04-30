@@ -19,11 +19,13 @@ def login():
     return render_template("login.html")
 
 # 📝 Register page
-@app.route("/register", methods=["GET", "POST"])
-def register():
+@app.route("/notes", methods=["GET", "POST"])
+def notes():
     if request.method == "POST":
-        return redirect("/login")
-    return render_template("register.html")
+        note = request.form.get("note")
+        if note:
+            notes_list.append(note)
+    return render_template("notes.html", notes=notes_list)
 
 # 📒 Notes page
 @app.route("/notes", methods=["GET", "POST"])
