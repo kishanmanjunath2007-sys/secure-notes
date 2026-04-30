@@ -1,0 +1,25 @@
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>Notes</title>
+</head>
+<body>
+
+    <h1>Your Notes 📝</h1>
+
+    <!-- FORM -->
+    <form method="POST" action="/notes">
+        <textarea name="note" rows="5" cols="40" placeholder="Type your note here..."></textarea><br><br>
+        <button type="submit">Save Note</button>
+    </form>
+
+    <hr>
+
+    <!-- DISPLAY NOTES -->
+    {% for note in notes %}
+        <p>{{ note }}</p>
+        <hr>
+    {% endfor %}
+
+</body>
+</html>
