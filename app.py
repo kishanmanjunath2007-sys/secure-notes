@@ -25,7 +25,13 @@ init_user_db()
 def init_notes_db():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS notes (username TEXT, note BLOB)")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            note BLOB
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -44,7 +50,6 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
 
-        # 🔐 HASH PASSWORD
         hashed_password = generate_password_hash(password)
 
         conn = sqlite3.connect("users.db")
@@ -70,7 +75,6 @@ def login():
         user = cur.fetchone()
         conn.close()
 
-        # 🔐 CHECK HASH
         if user and check_password_hash(user[1], password):
             session["user"] = username
             return redirect("/notes")
@@ -93,18 +97,36 @@ def notes():
         note = request.form.get("note")
         if note:
             encrypted_note = cipher.encrypt(note.encode())
-            cur.execute("INSERT INTO notes VALUES (?, ?)", (session["user"], encrypted_note))
+            cur.execute("INSERT INTO notes (username, note) VALUES (?, ?)",
+                        (session["user"], encrypted_note))
             conn.commit()
 
     # FETCH
-    cur.execute("SELECT note FROM notes WHERE username=?", (session["user"],))
+    cur.execute("SELECT id, note FROM notes WHERE username=?", (session["user"],))
     data = cur.fetchall()
     conn.close()
 
     # DECRYPT
-    notes = [cipher.decrypt(n[0]).decode() for n in data]
+    notes = []
+    for n in data:
+        decrypted = cipher.decrypt(n[1]).decode()
+        notes.append((n[0], decrypted))
 
     return render_template("notes.html", notes=notes)
+
+# -------- DELETE NOTE --------
+@app.route("/delete/<int:id>")
+def delete(id):
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("notes.db")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM notes WHERE id=? AND username=?", (id, session["user"]))
+    conn.commit()
+    conn.close()
+
+    return redirect("/notes")
 
 # -------- LOGOUT --------
 @app.route("/logout")
