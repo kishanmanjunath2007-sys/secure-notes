@@ -3,17 +3,27 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = "secret123"  # important for session
+app.secret_key = "secret123"
 
-# ------------------ DATABASE ------------------
-def init_db():
+# ------------------ USER DATABASE ------------------
+def init_user_db():
     conn = sqlite3.connect("users.db")
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)")
     conn.commit()
     conn.close()
 
-init_db()
+init_user_db()
+
+# ------------------ NOTES DATABASE ------------------
+def init_notes_db():
+    conn = sqlite3.connect("notes.db")
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS notes (username TEXT, note TEXT)")
+    conn.commit()
+    conn.close()
+
+init_notes_db()
 
 # ------------------ ROUTES ------------------
 
@@ -60,19 +70,29 @@ def login():
     return render_template("login.html")
 
 # -------- NOTES --------
-notes_list = []
-
 @app.route("/notes", methods=["GET", "POST"])
 def notes():
     if "user" not in session:
         return redirect("/login")
 
+    conn = sqlite3.connect("notes.db")
+    cur = conn.cursor()
+
+    # Save note
     if request.method == "POST":
         note = request.form.get("note")
         if note:
-            notes_list.append(note)
+            cur.execute("INSERT INTO notes VALUES (?, ?)", (session["user"], note))
+            conn.commit()
 
-    return render_template("notes.html", notes=notes_list)
+    # Fetch notes
+    cur.execute("SELECT note FROM notes WHERE username=?", (session["user"],))
+    data = cur.fetchall()
+    conn.close()
+
+    notes = [n[0] for n in data]
+
+    return render_template("notes.html", notes=notes)
 
 # -------- LOGOUT --------
 @app.route("/logout")
