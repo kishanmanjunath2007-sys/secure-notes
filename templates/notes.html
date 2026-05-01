@@ -5,26 +5,21 @@
 </head>
 <body>
 
-    <h2>Welcome {{ session['user'] }}</h2>
+<h2>Welcome {{ session['user'] }}</h2>
 
-    <h3>Your Notes</h3>
+<form method="POST">
+    <input type="text" name="note" placeholder="Write note" required>
+    <button type="submit">Save</button>
+</form>
 
-    <form method="POST">
-        <input type="text" name="note" placeholder="Write note" required>
-        <button type="submit">Save</button>
-    </form>
+<ul>
+    {% for n in notes %}
+        <li>{{ n }}</li>
+    {% endfor %}
+</ul>
 
-    <br>
-
-    <ul>
-        {% for n in notes %}
-            <li>{{ n }}</li>
-        {% endfor %}
-    </ul>
-
-    <br>
-
-    <a href="/logout">Logout</a>
+<br>
+<a href="/logout">Logout</a>
 
 </body>
 </html>
