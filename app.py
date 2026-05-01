@@ -7,11 +7,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# 🔐 Encryption key
+# Encryption key
 key = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
 cipher = Fernet(key)
 
-# ---------------- USER DB ----------------
+# -------- USER DB --------
 def init_user_db():
     conn = sqlite3.connect("users.db")
     cur = conn.cursor()
@@ -21,7 +21,7 @@ def init_user_db():
 
 init_user_db()
 
-# ---------------- NOTES DB ----------------
+# -------- NOTES DB --------
 def init_notes_db():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
@@ -37,8 +37,7 @@ def init_notes_db():
 
 init_notes_db()
 
-# ---------------- ROUTES ----------------
-
+# -------- HOME --------
 @app.route("/")
 def home():
     return redirect("/login")
@@ -50,11 +49,11 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
 
-        hashed_password = generate_password_hash(password)
+        hashed = generate_password_hash(password)
 
         conn = sqlite3.connect("users.db")
         cur = conn.cursor()
-        cur.execute("INSERT INTO users VALUES (?, ?)", (username, hashed_password))
+        cur.execute("INSERT INTO users VALUES (?, ?)", (username, hashed))
         conn.commit()
         conn.close()
 
@@ -92,25 +91,21 @@ def notes():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
 
-    # SAVE NOTE
     if request.method == "POST":
         note = request.form.get("note")
         if note:
-            encrypted_note = cipher.encrypt(note.encode())
+            encrypted = cipher.encrypt(note.encode())
             cur.execute("INSERT INTO notes (username, note) VALUES (?, ?)",
-                        (session["user"], encrypted_note))
+                        (session["user"], encrypted))
             conn.commit()
 
-    # FETCH NOTES
     cur.execute("SELECT id, note FROM notes WHERE username=?", (session["user"],))
     data = cur.fetchall()
     conn.close()
 
-    # DECRYPT
     notes = []
     for n in data:
-        decrypted = cipher.decrypt(n[1]).decode()
-        notes.append((n[0], decrypted))
+        notes.append((n[0], cipher.decrypt(n[1]).decode()))
 
     return render_template("notes.html", notes=notes)
 
@@ -134,6 +129,6 @@ def logout():
     session.pop("user", None)
     return redirect("/login")
 
-# ----------------
+# -------- RUN --------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
