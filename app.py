@@ -1,11 +1,16 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import os
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ------------------ USER DATABASE ------------------
+# 🔐 FIXED KEY (IMPORTANT – don’t change)
+key = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
+cipher = Fernet(key)
+
+# ------------------ USER DB ------------------
 def init_user_db():
     conn = sqlite3.connect("users.db")
     cur = conn.cursor()
@@ -15,11 +20,11 @@ def init_user_db():
 
 init_user_db()
 
-# ------------------ NOTES DATABASE ------------------
+# ------------------ NOTES DB ------------------
 def init_notes_db():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS notes (username TEXT, note TEXT)")
+    cur.execute("CREATE TABLE IF NOT EXISTS notes (username TEXT, note BLOB)")
     conn.commit()
     conn.close()
 
@@ -78,19 +83,21 @@ def notes():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
 
-    # Save note
+    # SAVE (encrypt)
     if request.method == "POST":
         note = request.form.get("note")
         if note:
-            cur.execute("INSERT INTO notes VALUES (?, ?)", (session["user"], note))
+            encrypted_note = cipher.encrypt(note.encode())
+            cur.execute("INSERT INTO notes VALUES (?, ?)", (session["user"], encrypted_note))
             conn.commit()
 
-    # Fetch notes
+    # FETCH
     cur.execute("SELECT note FROM notes WHERE username=?", (session["user"],))
     data = cur.fetchall()
     conn.close()
 
-    notes = [n[0] for n in data]
+    # DECRYPT
+    notes = [cipher.decrypt(n[0]).decode() for n in data]
 
     return render_template("notes.html", notes=notes)
 
