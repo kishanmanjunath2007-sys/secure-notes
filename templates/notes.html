@@ -1,14 +1,30 @@
-<h2>Your Notes</h2>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Notes</title>
+</head>
+<body>
 
-<form method="POST">
-  <input type="text" name="note" placeholder="Write note">
-  <button type="submit">Save</button>
-</form>
+    <h2>Welcome {{ session['user'] }}</h2>
 
-<ul>
-  {% for n in notes %}
-    <li>{{ n }}</li>
-  {% endfor %}
-</ul>
+    <h3>Your Notes</h3>
 
-<a href="/login">Logout</a>
+    <form method="POST">
+        <input type="text" name="note" placeholder="Write note" required>
+        <button type="submit">Save</button>
+    </form>
+
+    <br>
+
+    <ul>
+        {% for n in notes %}
+            <li>{{ n }}</li>
+        {% endfor %}
+    </ul>
+
+    <br>
+
+    <a href="/logout">Logout</a>
+
+</body>
+</html>
