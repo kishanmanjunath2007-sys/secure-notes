@@ -13,8 +13,11 @@
 </form>
 
 <ul>
-    {% for n in notes %}
-        <li>{{ n }}</li>
+    {% for id, n in notes %}
+        <li>
+            {{ n }}
+            <a href="/delete/{{ id }}">❌ Delete</a>
+        </li>
     {% endfor %}
 </ul>
 
