@@ -7,11 +7,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# 🔐 FIXED ENCRYPTION KEY
+# 🔐 Encryption key
 key = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
 cipher = Fernet(key)
 
-# ------------------ USER DB ------------------
+# ---------------- USER DB ----------------
 def init_user_db():
     conn = sqlite3.connect("users.db")
     cur = conn.cursor()
@@ -21,7 +21,7 @@ def init_user_db():
 
 init_user_db()
 
-# ------------------ NOTES DB ------------------
+# ---------------- NOTES DB ----------------
 def init_notes_db():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
@@ -37,7 +37,7 @@ def init_notes_db():
 
 init_notes_db()
 
-# ------------------ ROUTES ------------------
+# ---------------- ROUTES ----------------
 
 @app.route("/")
 def home():
@@ -92,7 +92,7 @@ def notes():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
 
-    # SAVE (ENCRYPT)
+    # SAVE NOTE
     if request.method == "POST":
         note = request.form.get("note")
         if note:
@@ -101,7 +101,7 @@ def notes():
                         (session["user"], encrypted_note))
             conn.commit()
 
-    # FETCH
+    # FETCH NOTES
     cur.execute("SELECT id, note FROM notes WHERE username=?", (session["user"],))
     data = cur.fetchall()
     conn.close()
@@ -114,7 +114,7 @@ def notes():
 
     return render_template("notes.html", notes=notes)
 
-# -------- DELETE NOTE --------
+# -------- DELETE --------
 @app.route("/delete/<int:id>")
 def delete(id):
     if "user" not in session:
@@ -134,6 +134,6 @@ def logout():
     session.pop("user", None)
     return redirect("/login")
 
-# ------------------
+# ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
