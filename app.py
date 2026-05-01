@@ -1,12 +1,13 @@
-from flask import Flask, render_template, request, redirect, session
+ from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import os
 from cryptography.fernet import Fernet
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# 🔐 FIXED KEY (IMPORTANT – don’t change)
+# 🔐 FIXED ENCRYPTION KEY
 key = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
 cipher = Fernet(key)
 
@@ -43,9 +44,12 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
 
+        # 🔐 HASH PASSWORD
+        hashed_password = generate_password_hash(password)
+
         conn = sqlite3.connect("users.db")
         cur = conn.cursor()
-        cur.execute("INSERT INTO users VALUES (?, ?)", (username, password))
+        cur.execute("INSERT INTO users VALUES (?, ?)", (username, hashed_password))
         conn.commit()
         conn.close()
 
@@ -62,11 +66,12 @@ def login():
 
         conn = sqlite3.connect("users.db")
         cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+        cur.execute("SELECT * FROM users WHERE username=?", (username,))
         user = cur.fetchone()
         conn.close()
 
-        if user:
+        # 🔐 CHECK HASH
+        if user and check_password_hash(user[1], password):
             session["user"] = username
             return redirect("/notes")
         else:
@@ -83,7 +88,7 @@ def notes():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
 
-    # SAVE (encrypt)
+    # SAVE (ENCRYPT)
     if request.method == "POST":
         note = request.form.get("note")
         if note:
