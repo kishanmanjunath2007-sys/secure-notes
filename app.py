@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# 🔐 Encryption key
+# Encryption key
 key = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
 cipher = Fernet(key)
 
@@ -82,7 +82,7 @@ def login():
 
     return render_template("login.html")
 
-# -------- NOTES --------
+# -------- NOTES + SEARCH --------
 @app.route("/notes", methods=["GET", "POST"])
 def notes():
     if "user" not in session:
@@ -100,14 +100,23 @@ def notes():
                         (session["user"], encrypted))
             conn.commit()
 
-    # FETCH
+    # SEARCH TEXT
+    search = request.args.get("search")
+
     cur.execute("SELECT id, note FROM notes WHERE username=?", (session["user"],))
     data = cur.fetchall()
     conn.close()
 
     notes = []
     for n in data:
-        notes.append((n[0], cipher.decrypt(n[1]).decode()))
+        decrypted = cipher.decrypt(n[1]).decode()
+
+        # FILTER
+        if search:
+            if search.lower() in decrypted.lower():
+                notes.append((n[0], decrypted))
+        else:
+            notes.append((n[0], decrypted))
 
     return render_template("notes.html", notes=notes)
 
