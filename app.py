@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# Encryption key
+# 🔐 Encryption key
 key = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
 cipher = Fernet(key)
 
@@ -91,6 +91,7 @@ def notes():
     conn = sqlite3.connect("notes.db")
     cur = conn.cursor()
 
+    # SAVE
     if request.method == "POST":
         note = request.form.get("note")
         if note:
@@ -99,6 +100,7 @@ def notes():
                         (session["user"], encrypted))
             conn.commit()
 
+    # FETCH
     cur.execute("SELECT id, note FROM notes WHERE username=?", (session["user"],))
     data = cur.fetchall()
     conn.close()
@@ -108,6 +110,36 @@ def notes():
         notes.append((n[0], cipher.decrypt(n[1]).decode()))
 
     return render_template("notes.html", notes=notes)
+
+# -------- EDIT --------
+@app.route("/edit/<int:id>", methods=["GET", "POST"])
+def edit(id):
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("notes.db")
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        new_note = request.form.get("note")
+        encrypted = cipher.encrypt(new_note.encode())
+
+        cur.execute("UPDATE notes SET note=? WHERE id=? AND username=?",
+                    (encrypted, id, session["user"]))
+        conn.commit()
+        conn.close()
+        return redirect("/notes")
+
+    cur.execute("SELECT note FROM notes WHERE id=? AND username=?",
+                (id, session["user"]))
+    data = cur.fetchone()
+    conn.close()
+
+    if data:
+        note = cipher.decrypt(data[0]).decode()
+        return render_template("edit.html", note=note, id=id)
+
+    return redirect("/notes")
 
 # -------- DELETE --------
 @app.route("/delete/<int:id>")
