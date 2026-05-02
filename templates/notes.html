@@ -26,7 +26,10 @@
             {% for id, n in notes %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     {{ n }}
-                    <a href="/delete/{{ id }}" class="btn btn-danger btn-sm">Delete</a>
+                    <div>
+                        <a href="/edit/{{ id }}" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="/delete/{{ id }}" class="btn btn-danger btn-sm">Delete</a>
+                    </div>
                 </li>
             {% endfor %}
         </ul>
